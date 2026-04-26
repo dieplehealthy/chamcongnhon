@@ -2,9 +2,11 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1220" />
-  <title>Chấm công của Nhơn</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Chấm công Nhơn</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -15,185 +17,169 @@
     <div class="lock-card">
       <div class="lock-bolt">⚡</div>
       <h2 id="lock-title">Chấm công của Nhơn</h2>
-      <p class="lock-sub">Nhập mật khẩu để tiếp tục</p>
+      <p class="lock-sub">Nhập mật khẩu</p>
       <input type="password" id="lock-input" inputmode="numeric" autocomplete="off" placeholder="• • •" maxlength="20" />
       <div id="lock-error" class="lock-error" hidden>Mật khẩu không đúng</div>
       <button class="primary big" id="lock-submit">Mở khóa</button>
     </div>
   </div>
 
+  <!-- FIXED TOP BAR -->
   <header class="topbar">
     <div class="brand">
       <span class="bolt">⚡</span>
-      <span class="brand-text" id="brand-text">Chấm công của Nhơn</span>
+      <span class="brand-text" id="brand-text">Chấm công · Nhơn</span>
     </div>
-    <div class="topbar-extra">
-      <button class="icon-btn ghost" id="theme-toggle" title="Đổi giao diện">🌙</button>
-    </div>
+    <button class="topbar-btn" id="theme-toggle" title="Đổi giao diện">🌙</button>
   </header>
 
-  <main id="app">
-    <!-- TODAY -->
-    <section id="tab-today" class="panel active">
-      <div class="day-bar">
-        <button class="icon-btn" id="prev-day">‹</button>
-        <div class="day-label" id="today-label"></div>
-        <button class="icon-btn" id="next-day">›</button>
-        <button class="icon-btn ghost" id="jump-today" title="Hôm nay">●</button>
-      </div>
+  <!-- TODAY -->
+  <section id="tab-today" class="panel active">
+    <div class="sub-bar">
+      <button class="sub-btn" id="prev-day">‹</button>
+      <div class="sub-label" id="today-label"></div>
+      <button class="sub-btn" id="next-day">›</button>
+      <button class="sub-btn accent" id="jump-today" title="Hôm nay">●</button>
+    </div>
 
-      <div id="today-list" class="worker-list"></div>
-      <div id="today-summary" class="day-summary"></div>
+    <div id="today-summary" class="mini-summary"></div>
+    <div id="today-list" class="worker-list"></div>
 
-      <div class="empty-cta" id="empty-workers" hidden>
-        <p>Chưa có thợ nào.</p>
-        <button class="primary big" id="empty-add-worker">+ Thêm thợ</button>
-      </div>
-    </section>
+    <div class="empty-cta" id="empty-workers" hidden>
+      <p>Chưa có thợ nào.</p>
+      <button class="primary big" id="empty-add-worker">+ Thêm thợ</button>
+    </div>
+  </section>
 
-    <!-- WEEK -->
-    <section id="tab-week" class="panel">
-      <div class="day-bar">
-        <button class="icon-btn" id="prev-week">‹</button>
-        <div class="day-label" id="week-label"></div>
-        <button class="icon-btn" id="next-week">›</button>
-      </div>
+  <!-- WEEK -->
+  <section id="tab-week" class="panel">
+    <div class="sub-bar">
+      <button class="sub-btn" id="prev-week">‹</button>
+      <div class="sub-label" id="week-label"></div>
+      <button class="sub-btn" id="next-week">›</button>
+    </div>
 
-      <div class="picker">
-        <label>Thợ:</label>
-        <select id="week-worker"></select>
+    <div class="picker compact">
+      <select id="week-worker"></select>
+      <div class="totals-pill">
+        <span id="week-h">0h</span>
+        <span class="dot">·</span>
+        <span class="amber" id="week-p">0₫</span>
       </div>
+    </div>
 
-      <div id="week-cards" class="week-cards"></div>
+    <div id="week-rows" class="day-rows"></div>
+  </section>
 
-      <div class="cards-2">
-        <div class="card"><div class="lbl">Tổng giờ tuần</div><div class="val" id="week-h">0</div></div>
-        <div class="card"><div class="lbl">Tổng lương tuần</div><div class="val amber" id="week-p">0 ₫</div></div>
-      </div>
-    </section>
+  <!-- MONTH -->
+  <section id="tab-month" class="panel">
+    <div class="sub-bar">
+      <button class="sub-btn" id="prev-month">‹</button>
+      <div class="sub-label" id="month-label"></div>
+      <button class="sub-btn" id="next-month">›</button>
+    </div>
 
-    <!-- MONTH -->
-    <section id="tab-month" class="panel">
-      <div class="day-bar">
-        <button class="icon-btn" id="prev-month">‹</button>
-        <div class="day-label" id="month-label"></div>
-        <button class="icon-btn" id="next-month">›</button>
-      </div>
+    <div class="picker compact">
+      <select id="month-worker"><option value="__all__">Tất cả thợ</option></select>
+    </div>
 
-      <div class="picker">
-        <label>Xem:</label>
-        <select id="month-worker"><option value="__all__">Tất cả thợ</option></select>
-      </div>
+    <div class="cards-3 mini">
+      <div class="card"><div class="lbl">Ngày</div><div class="val" id="m-days">0</div></div>
+      <div class="card"><div class="lbl">Giờ</div><div class="val" id="m-hours">0</div></div>
+      <div class="card"><div class="lbl">Lương</div><div class="val amber" id="m-pay">0</div></div>
+    </div>
 
-      <div class="cards-3">
-        <div class="card"><div class="lbl">Số ngày</div><div class="val" id="m-days">0</div></div>
-        <div class="card"><div class="lbl">Tổng giờ</div><div class="val" id="m-hours">0</div></div>
-        <div class="card"><div class="lbl">Tổng lương</div><div class="val amber" id="m-pay">0</div></div>
-      </div>
+    <div id="month-content"></div>
+  </section>
 
-      <div id="month-content"></div>
-    </section>
+  <!-- REPORT -->
+  <section id="tab-report" class="panel">
+    <div class="picker compact">
+      <select id="report-year"></select>
+      <select id="report-worker"><option value="__all__">Tất cả</option></select>
+    </div>
 
-    <!-- REPORT -->
-    <section id="tab-report" class="panel">
-      <div class="picker">
-        <label>Năm:</label>
-        <select id="report-year"></select>
-        <label>Thợ:</label>
-        <select id="report-worker"><option value="__all__">Tất cả</option></select>
-      </div>
+    <div class="charts">
+      <div class="chart-box"><h3>Giờ theo tháng</h3><canvas id="chart-hours"></canvas></div>
+      <div class="chart-box"><h3>Lương theo tháng</h3><canvas id="chart-pay"></canvas></div>
+      <div class="chart-box"><h3>Lương theo từng thợ (tháng này)</h3><canvas id="chart-by-worker"></canvas></div>
+    </div>
 
-      <div class="charts">
-        <div class="chart-box"><h3>Giờ theo tháng</h3><canvas id="chart-hours"></canvas></div>
-        <div class="chart-box"><h3>Lương theo tháng</h3><canvas id="chart-pay"></canvas></div>
-        <div class="chart-box"><h3>Lương theo từng thợ (tháng này)</h3><canvas id="chart-by-worker"></canvas></div>
-      </div>
+    <div class="section-h">Sao lưu / Khôi phục</div>
+    <div class="actions-row">
+      <button class="secondary" id="export-csv">⬇ CSV</button>
+      <button class="secondary" id="export-json">⬇ JSON đầy đủ</button>
+      <label class="file-btn">⬆ Nhập JSON<input type="file" id="import-json" accept=".json" hidden /></label>
+    </div>
+    <p class="hint">JSON bao gồm: thợ, ngày công, cài đặt, mật khẩu — chuyển máy được.</p>
+  </section>
 
-      <div class="section-header" style="margin-top:18px;">
-        <h2>Sao lưu / Khôi phục</h2>
-      </div>
-      <div class="actions-row">
-        <button class="secondary" id="export-csv">⬇ CSV chấm công</button>
-        <button class="secondary" id="export-json">⬇ Xuất toàn bộ (JSON)</button>
-        <label class="file-btn">⬆ Nhập từ JSON<input type="file" id="import-json" accept=".json" hidden /></label>
-      </div>
-      <p class="hint">JSON chứa đầy đủ: thợ, ngày công, cài đặt, mật khẩu. Dùng để chuyển sang máy/điện thoại khác.</p>
-    </section>
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="panel">
+    <div class="section-h" style="margin-top:0;">
+      <span>Thợ</span>
+      <button class="primary small" id="add-worker">+ Thêm</button>
+    </div>
+    <div id="workers-list" class="worker-mgmt"></div>
 
-    <!-- SETTINGS / WORKERS -->
-    <section id="tab-settings" class="panel">
-      <div class="section-header">
-        <h2>Thợ</h2>
-        <button class="primary" id="add-worker">+ Thêm</button>
-      </div>
-      <div id="workers-list" class="worker-mgmt"></div>
+    <div class="section-h">Cài đặt chung</div>
+    <div class="settings-grid">
+      <label>Tên chủ app
+        <input type="text" id="cfg-owner" placeholder="Nhơn" />
+      </label>
+      <label>Giao diện
+        <select id="cfg-theme">
+          <option value="dark">Tối</option>
+          <option value="light">Sáng</option>
+        </select>
+      </label>
+      <label>Giờ chuẩn / ngày
+        <input type="number" id="cfg-std-hours" min="1" max="24" step="0.5" />
+      </label>
+      <label>Cách tính lương
+        <select id="cfg-mode">
+          <option value="hourly">Theo giờ</option>
+          <option value="daily">Theo ngày công</option>
+          <option value="mixed">Hỗn hợp</option>
+        </select>
+      </label>
+      <label>Mặc định ca sáng (giờ)
+        <input type="number" id="cfg-morning" min="0" max="12" step="0.5" />
+      </label>
+      <label>Mặc định ca chiều (giờ)
+        <input type="number" id="cfg-afternoon" min="0" max="12" step="0.5" />
+      </label>
+    </div>
 
-      <div class="section-header" style="margin-top:24px;">
-        <h2>Cài đặt chung</h2>
-      </div>
-      <div class="settings-grid">
-        <label>Tên chủ app (tiêu đề)
-          <input type="text" id="cfg-owner" placeholder="Nhơn" />
-        </label>
-        <label>Giao diện
-          <select id="cfg-theme">
-            <option value="dark">Tối</option>
-            <option value="light">Sáng</option>
-          </select>
-        </label>
-        <label>Giờ chuẩn / ngày
-          <input type="number" id="cfg-std-hours" min="1" max="24" step="0.5" />
-        </label>
-        <label>Mặc định ca sáng (giờ)
-          <input type="number" id="cfg-morning" min="0" max="12" step="0.5" />
-        </label>
-        <label>Mặc định ca chiều (giờ)
-          <input type="number" id="cfg-afternoon" min="0" max="12" step="0.5" />
-        </label>
-        <label>Cách tính lương
-          <select id="cfg-mode">
-            <option value="hourly">Theo giờ</option>
-            <option value="daily">Theo ngày công</option>
-            <option value="mixed">Hỗn hợp (đủ giờ = 1 công, dư tính giờ)</option>
-          </select>
-        </label>
-      </div>
+    <div class="section-h">Tăng ca</div>
+    <div class="settings-grid">
+      <label class="switch-row" style="grid-column: 1 / -1;">
+        <span>Bật tính tăng ca (vượt giờ chuẩn/ngày)</span>
+        <input type="checkbox" id="cfg-ot-enabled" />
+      </label>
+      <label style="grid-column: 1 / -1;">Hệ số lương tăng ca
+        <input type="number" id="cfg-ot-rate" min="1" max="5" step="0.1" />
+      </label>
+    </div>
 
-      <div class="section-header" style="margin-top:18px;">
-        <h2>Tăng ca</h2>
-      </div>
-      <div class="settings-grid">
-        <label class="switch-row">
-          <span>Bật tính tăng ca</span>
-          <input type="checkbox" id="cfg-ot-enabled" />
-        </label>
-        <label>Hệ số lương tăng ca
-          <input type="number" id="cfg-ot-rate" min="1" max="5" step="0.1" />
-        </label>
-      </div>
-      <p class="hint">Tăng ca = giờ làm vượt quá <b>Giờ chuẩn / ngày</b>. Tiền tăng ca = lương giờ × hệ số. (VD: 8h chuẩn, làm 10h, hệ số 1.5 → 8h thường + 2h × 1.5)</p>
+    <div class="section-h">Bảo mật</div>
+    <div class="settings-grid">
+      <label>Mật khẩu mở app
+        <input type="text" id="cfg-password" placeholder="Để trống = không khoá" />
+      </label>
+      <label>Xác nhận lại
+        <input type="text" id="cfg-password2" placeholder="Nhập lại" />
+      </label>
+    </div>
 
-      <div class="section-header" style="margin-top:18px;">
-        <h2>Bảo mật</h2>
-      </div>
-      <div class="settings-grid">
-        <label>Mật khẩu mở app
-          <input type="text" id="cfg-password" placeholder="Để trống = không khoá" />
-        </label>
-        <label>Xác nhận lại
-          <input type="text" id="cfg-password2" placeholder="Nhập lại mật khẩu" />
-        </label>
-      </div>
+    <div class="actions-row">
+      <button class="primary" id="save-settings">Lưu cài đặt</button>
+      <button class="danger" id="reset-data">Xoá toàn bộ dữ liệu</button>
+    </div>
+    <p class="hint">Mật khẩu là rào cản đơn giản phía trình duyệt.</p>
+  </section>
 
-      <div class="actions-row">
-        <button class="primary" id="save-settings">Lưu cài đặt</button>
-        <button class="danger" id="reset-data">Xoá toàn bộ dữ liệu</button>
-      </div>
-      <p class="hint">Mật khẩu chỉ là rào cản đơn giản phía trình duyệt — không phải bảo mật thật.</p>
-    </section>
-  </main>
-
-  <!-- Bottom nav -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn active" data-tab="today"><span class="ico">✓</span><span>Chấm</span></button>
     <button class="nav-btn" data-tab="week"><span class="ico">📅</span><span>Tuần</span></button>
@@ -202,12 +188,12 @@
     <button class="nav-btn" data-tab="settings"><span class="ico">⚙</span><span>Cài đặt</span></button>
   </nav>
 
-  <!-- Modal -->
+  <!-- MODAL -->
   <div class="modal-backdrop" id="modal-backdrop" hidden>
     <div class="modal" id="modal">
       <div class="modal-header">
         <h3 id="modal-title">Tiêu đề</h3>
-        <button class="icon-btn" id="modal-close">✕</button>
+        <button class="topbar-btn" id="modal-close">✕</button>
       </div>
       <div class="modal-body" id="modal-body"></div>
       <div class="modal-actions" id="modal-actions"></div>

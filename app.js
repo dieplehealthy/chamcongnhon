@@ -164,10 +164,11 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
 // ---------------- Brand / Title ----------------
 function applyBrand() {
   const name = (store.settings.ownerName || '').trim();
-  const title = name ? `Chấm công của ${name}` : 'Chấm công';
-  document.getElementById('brand-text').textContent = title;
-  document.getElementById('lock-title').textContent = title;
-  document.title = title;
+  const compact = name ? `Chấm công · ${name}` : 'Chấm công';
+  const full = name ? `Chấm công của ${name}` : 'Chấm công';
+  document.getElementById('brand-text').textContent = compact;
+  document.getElementById('lock-title').textContent = full;
+  document.title = compact;
 }
 applyBrand();
 
@@ -241,7 +242,7 @@ function renderToday() {
   const isToday = sameDate(todayDate, new Date());
   const dayName = isToday ? 'Hôm nay' : DAY_NAMES_LONG[todayDate.getDay()];
   document.getElementById('today-label').textContent =
-    `${dayName} • ${pad(todayDate.getDate())}/${pad(todayDate.getMonth() + 1)}/${todayDate.getFullYear()}`;
+    `${dayName} · ${pad(todayDate.getDate())}/${pad(todayDate.getMonth() + 1)}/${todayDate.getFullYear()}`;
 
   let totalH = 0, totalP = 0, doneCount = 0;
   store.workers.forEach(w => {
@@ -258,70 +259,74 @@ function renderToday() {
     card.innerHTML = `
       <div class="worker-avatar" style="background:${w.color}">${initials(w.name)}</div>
       <div class="worker-main">
-        <div class="worker-name">${escapeHtml(w.name)}</div>
+        <div class="worker-name"><span>${escapeHtml(w.name)}</span>${h > 0 ? `<span class="pay">${fmtMoney(bd.total)}₫${bd.otHours > 0 ? ' +OT' : ''}</span>` : ''}</div>
         <div class="shift-row">
-          <button class="shift-btn am ${am > 0 ? 'on' : ''}" data-wid="${w.id}" data-shift="morning">
-            <span class="label">Sáng</span>
-            <span class="hours">${am > 0 ? fmtHours(am) + ' giờ' : 'Tap để chấm'}</span>
-            <span class="check">✓</span>
+          <button class="shift-btn am ${am > 0 ? 'on' : 'empty'}" data-wid="${w.id}" data-shift="morning" data-date="${ds}">
+            <span class="lbl">Sáng</span>
+            <span class="h">${am > 0 ? fmtHours(am) + 'h' : ''}</span>
           </button>
-          <button class="shift-btn pm ${pm > 0 ? 'on' : ''}" data-wid="${w.id}" data-shift="afternoon">
-            <span class="label">Chiều</span>
-            <span class="hours">${pm > 0 ? fmtHours(pm) + ' giờ' : 'Tap để chấm'}</span>
-            <span class="check">✓</span>
+          <button class="shift-btn pm ${pm > 0 ? 'on' : 'empty'}" data-wid="${w.id}" data-shift="afternoon" data-date="${ds}">
+            <span class="lbl">Chiều</span>
+            <span class="h">${pm > 0 ? fmtHours(pm) + 'h' : ''}</span>
           </button>
-        </div>
-        <div class="worker-totals">
-          <span>Tổng: <span class="strong">${fmtHours(h)} giờ</span>${bd.otHours > 0 ? ` <span class="ot">(+${fmtHours(bd.otHours)}h tăng ca)</span>` : ''}</span>
-          <span>Lương: <span class="strong">${fmtMoney(bd.total)} ₫</span></span>
         </div>
       </div>
     `;
     list.appendChild(card);
   });
 
-  // Bind shift buttons
-  list.querySelectorAll('.shift-btn').forEach(btn => {
+  bindShiftButtons(list);
+
+  if (store.workers.length > 0) {
+    summary.innerHTML = `
+      <div class="stat"><div class="lbl">Đã chấm</div><div class="val">${doneCount}/${store.workers.length}</div></div>
+      <div class="stat"><div class="lbl">Tổng giờ</div><div class="val">${fmtHours(totalH)}h</div></div>
+      <div class="stat"><div class="lbl">Tổng lương</div><div class="val amber">${fmtMoney(totalP)}₫</div></div>
+    `;
+  } else {
+    summary.innerHTML = '';
+  }
+}
+
+function bindShiftButtons(scope) {
+  scope.querySelectorAll('.shift-btn, .shift-chip').forEach(btn => {
+    if (!btn.dataset.wid) {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      return;
+    }
     let pressTimer = null, longPressed = false;
-    const startPress = () => {
+    btn.addEventListener('pointerdown', () => {
       longPressed = false;
       pressTimer = setTimeout(() => { longPressed = true; openShiftEditor(btn); }, 500);
-    };
-    const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); pressTimer = null; };
-    btn.addEventListener('pointerdown', startPress);
-    btn.addEventListener('pointerup', cancelPress);
-    btn.addEventListener('pointerleave', cancelPress);
-    btn.addEventListener('pointercancel', cancelPress);
+    });
+    const cancel = () => { if (pressTimer) clearTimeout(pressTimer); pressTimer = null; };
+    btn.addEventListener('pointerup', cancel);
+    btn.addEventListener('pointerleave', cancel);
+    btn.addEventListener('pointercancel', cancel);
     btn.addEventListener('click', (ev) => {
       if (longPressed) { ev.preventDefault(); return; }
       tapShift(btn);
     });
   });
-
-  if (store.workers.length > 0) {
-    summary.innerHTML = `
-      <div class="stat"><div class="lbl">Đã chấm</div><div class="val">${doneCount}/${store.workers.length}</div></div>
-      <div class="stat"><div class="lbl">Tổng giờ</div><div class="val">${fmtHours(totalH)}</div></div>
-      <div class="stat"><div class="lbl">Tổng lương</div><div class="val amber">${fmtMoney(totalP)} ₫</div></div>
-    `;
-  }
 }
 
 function tapShift(btn) {
   const wid = btn.dataset.wid;
   const shift = btn.dataset.shift;
-  const ds = fmtDate(todayDate);
+  const ds = btn.dataset.date || fmtDate(todayDate);
   const e = { ...getEntry(wid, ds) };
   const cur = e[shift] || 0;
   const def = shift === 'morning' ? store.settings.morningDefault : store.settings.afternoonDefault;
   const w = getWorker(wid);
   const shiftName = shift === 'morning' ? 'Sáng' : 'Chiều';
 
+  const refreshAll = () => { renderToday(); renderWeek(); renderMonth(); };
+
   if (cur > 0) {
-    // Confirmation: cancel or change
     confirmDialog({
       title: `Đã chấm ${shiftName} (${fmtHours(cur)} giờ)`,
-      message: `${w.name} đã chấm ca ${shiftName.toLowerCase()} với ${fmtHours(cur)} giờ. Bạn muốn làm gì?`,
+      message: `${w.name} · ${ds}\nCa ${shiftName.toLowerCase()} đã chấm ${fmtHours(cur)} giờ.`,
       actions: [
         { label: 'Để nguyên', cls: 'secondary', onClick: closeModal },
         { label: 'Sửa số giờ', cls: 'secondary', onClick: () => { closeModal(); openShiftEditor(btn); } },
@@ -329,16 +334,15 @@ function tapShift(btn) {
           e[shift] = 0;
           setEntry(wid, ds, e);
           closeModal();
-          renderToday();
+          refreshAll();
           toast('Đã huỷ ca ' + shiftName.toLowerCase());
         } }
       ]
     });
   } else {
-    // First time tap: silent set default
     e[shift] = def;
     setEntry(wid, ds, e);
-    renderToday();
+    refreshAll();
   }
 }
 
@@ -382,7 +386,7 @@ document.getElementById('next-day').addEventListener('click', () => { todayDate 
 document.getElementById('jump-today').addEventListener('click', () => { todayDate = new Date(); todayDate.setHours(0,0,0,0); renderToday(); });
 document.getElementById('empty-add-worker').addEventListener('click', () => openWorkerEditor(null));
 
-// ---------------- WEEK (card-based, no overflow) ----------------
+// ---------------- WEEK (compact 7 rows fitting one screen) ----------------
 let weekStart = startOfWeek(new Date());
 
 function renderWeek() {
@@ -395,8 +399,8 @@ function renderWeek() {
 
   const wid = sel.value;
   const w = wid ? getWorker(wid) : null;
-  const cards = document.getElementById('week-cards');
-  cards.innerHTML = '';
+  const rows = document.getElementById('week-rows');
+  rows.innerHTML = '';
   let totalH = 0, totalP = 0;
   const today = new Date();
 
@@ -412,96 +416,50 @@ function renderWeek() {
     const isWeekend = d.getDay() === 0 || d.getDay() === 6;
     const isToday = sameDate(d, today);
 
-    const card = document.createElement('div');
-    card.className = 'worker-card';
-    card.innerHTML = `
-      <div class="worker-avatar" style="background:${isToday ? 'var(--primary)' : (isWeekend ? '#3b82f6' : '#64748b')}">
-        ${pad(d.getDate())}
+    const row = document.createElement('div');
+    row.className = `day-row${isWeekend ? ' weekend' : ''}${isToday ? ' today' : ''}`;
+    row.innerHTML = `
+      <div class="day-badge">
+        <div class="dow">${DAY_NAMES[d.getDay()]}</div>
+        <div class="dnum">${pad(d.getDate())}</div>
       </div>
-      <div class="worker-main">
-        <div class="worker-name">${DAY_NAMES_LONG[d.getDay()]} ${isToday ? '• Hôm nay' : ''}</div>
-        <div class="shift-row">
-          <button class="shift-btn am ${am > 0 ? 'on' : ''}" data-wid="${wid}" data-date="${ds}" data-shift="morning">
-            <span class="label">Sáng</span>
-            <span class="hours">${am > 0 ? fmtHours(am) + ' giờ' : 'Tap để chấm'}</span>
-            <span class="check">✓</span>
-          </button>
-          <button class="shift-btn pm ${pm > 0 ? 'on' : ''}" data-wid="${wid}" data-date="${ds}" data-shift="afternoon">
-            <span class="label">Chiều</span>
-            <span class="hours">${pm > 0 ? fmtHours(pm) + ' giờ' : 'Tap để chấm'}</span>
-            <span class="check">✓</span>
-          </button>
-        </div>
-        <div class="worker-totals">
-          <span>Tổng: <span class="strong">${fmtHours(h)} giờ</span>${bd.otHours > 0 ? ` <span class="ot">(+${fmtHours(bd.otHours)}h)</span>` : ''}</span>
-          <span>Lương: <span class="strong">${fmtMoney(bd.total)} ₫</span></span>
-        </div>
+      <button class="shift-chip am ${am > 0 ? 'on' : ''}" data-wid="${wid || ''}" data-date="${ds}" data-shift="morning">
+        <span class="l">SÁNG</span>
+        <span class="v">${am > 0 ? fmtHours(am) + 'h' : '—'}</span>
+      </button>
+      <button class="shift-chip pm ${pm > 0 ? 'on' : ''}" data-wid="${wid || ''}" data-date="${ds}" data-shift="afternoon">
+        <span class="l">CHIỀU</span>
+        <span class="v">${pm > 0 ? fmtHours(pm) + 'h' : '—'}</span>
+      </button>
+      <div class="day-end">
+        <div class="h">${h > 0 ? fmtHours(h) + 'h' : ''}</div>
+        ${h > 0 ? `<div class="p">${fmtMoneyShort(bd.total)}</div>` : ''}
+        ${bd.otHours > 0 ? `<div class="ot">+${fmtHours(bd.otHours)}h OT</div>` : ''}
       </div>
     `;
-    cards.appendChild(card);
+    rows.appendChild(row);
   }
 
-  document.getElementById('week-h').textContent = fmtHours(totalH) + ' giờ';
-  document.getElementById('week-p').textContent = fmtMoney(totalP) + ' ₫';
+  document.getElementById('week-h').textContent = fmtHours(totalH) + 'h';
+  document.getElementById('week-p').textContent = fmtMoneyShort(totalP);
   const end = addDays(weekStart, 6);
   document.getElementById('week-label').textContent =
-    `${pad(weekStart.getDate())}/${pad(weekStart.getMonth()+1)} → ${pad(end.getDate())}/${pad(end.getMonth()+1)}`;
+    `Tuần ${pad(weekStart.getDate())}/${pad(weekStart.getMonth()+1)} – ${pad(end.getDate())}/${pad(end.getMonth()+1)}`;
 
-  // bind shift buttons (with confirmation)
-  cards.querySelectorAll('.shift-btn').forEach(btn => {
-    if (!btn.dataset.wid) {
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      return;
-    }
-    let pressTimer = null, longPressed = false;
-    btn.addEventListener('pointerdown', () => {
-      longPressed = false;
-      pressTimer = setTimeout(() => { longPressed = true; openShiftEditor(btn); }, 500);
-    });
-    const cancel = () => { if (pressTimer) clearTimeout(pressTimer); pressTimer = null; };
-    btn.addEventListener('pointerup', cancel);
-    btn.addEventListener('pointerleave', cancel);
-    btn.addEventListener('pointercancel', cancel);
-    btn.addEventListener('click', (ev) => {
-      if (longPressed) { ev.preventDefault(); return; }
-      tapShiftWeek(btn);
-    });
-  });
-}
-
-function tapShiftWeek(btn) {
-  const wid = btn.dataset.wid;
-  const ds = btn.dataset.date;
-  const shift = btn.dataset.shift;
-  const e = { ...getEntry(wid, ds) };
-  const cur = e[shift] || 0;
-  const def = shift === 'morning' ? store.settings.morningDefault : store.settings.afternoonDefault;
-  const w = getWorker(wid);
-  const shiftName = shift === 'morning' ? 'Sáng' : 'Chiều';
-  if (cur > 0) {
-    confirmDialog({
-      title: `${ds} • ${shiftName} (${fmtHours(cur)} giờ)`,
-      message: `Đã chấm ca này. Bạn muốn làm gì?`,
-      actions: [
-        { label: 'Để nguyên', cls: 'secondary', onClick: closeModal },
-        { label: 'Sửa số giờ', cls: 'secondary', onClick: () => { closeModal(); openShiftEditor(btn); } },
-        { label: 'Huỷ ca', cls: 'danger', onClick: () => {
-          e[shift] = 0; setEntry(wid, ds, e); closeModal(); renderWeek();
-          toast('Đã huỷ ca ' + shiftName.toLowerCase());
-        } }
-      ]
-    });
-  } else {
-    e[shift] = def;
-    setEntry(wid, ds, e);
-    renderWeek();
-  }
+  bindShiftButtons(rows);
 }
 
 document.getElementById('prev-week').addEventListener('click', () => { weekStart = addDays(weekStart, -7); renderWeek(); });
 document.getElementById('next-week').addEventListener('click', () => { weekStart = addDays(weekStart, 7); renderWeek(); });
 document.getElementById('week-worker').addEventListener('change', renderWeek);
+
+function fmtMoneyShort(n) {
+  if (!isFinite(n) || n === 0) return '0₫';
+  const abs = Math.abs(n);
+  if (abs >= 1000000) return (n / 1000000).toFixed(abs >= 10000000 ? 0 : 1).replace(/\.0$/, '') + 'tr';
+  if (abs >= 1000) return Math.round(n / 1000) + 'k';
+  return Math.round(n) + '₫';
+}
 
 // ---------------- MONTH ----------------
 let monthDate = new Date(); monthDate.setDate(1);
@@ -542,23 +500,23 @@ function renderMonth() {
       let cls = 'month-cell';
       if (h >= store.settings.stdHours) cls += ' full';
       else if (h > 0) cls += ' has';
-      cells.push(`<div class="${cls}" title="${ds}: ${fmtHours(h)}h">${i}<span style="font-size:9px;">${h > 0 ? fmtHours(h) : ''}</span></div>`);
+      cells.push(`<div class="${cls}" title="${ds}: ${fmtHours(h)}h"><span>${i}</span>${h > 0 ? `<span class="hh">${fmtHours(h)}</span>` : ''}</div>`);
     }
     grandH += wH; grandP += wP;
 
     const block = document.createElement('div');
     block.className = 'month-worker-block';
     block.innerHTML = `
-      <div class="h">
+      <div class="h-row">
         <span class="av" style="background:${w.color}">${initials(w.name)}</span>
         <span class="nm">${escapeHtml(w.name)}</span>
-        <span class="pay">${fmtMoney(wP)} ₫</span>
+        <span class="pay">${fmtMoneyShort(wP)}</span>
       </div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">
-        ${wD} ngày • ${fmtHours(wH)} giờ${wOT > 0 ? ` • ${fmtHours(wOT)}h tăng ca` : ''}
+      <div class="sub">
+        ${wD} ngày · ${fmtHours(wH)}h${wOT > 0 ? ` · +${fmtHours(wOT)}h OT` : ''}
       </div>
       <div class="month-grid">
-        ${['T2','T3','T4','T5','T6','T7','CN'].map(d => `<div style="text-align:center;font-size:10px;color:var(--text-dim);">${d}</div>`).join('')}
+        ${['T2','T3','T4','T5','T6','T7','CN'].map(d => `<div class="dow-h">${d}</div>`).join('')}
         ${cells.join('')}
       </div>
     `;
@@ -566,8 +524,8 @@ function renderMonth() {
   });
 
   document.getElementById('m-days').textContent = daysSet.size;
-  document.getElementById('m-hours').textContent = fmtHours(grandH);
-  document.getElementById('m-pay').textContent = fmtMoney(grandP) + ' ₫';
+  document.getElementById('m-hours').textContent = fmtHours(grandH) + 'h';
+  document.getElementById('m-pay').textContent = fmtMoneyShort(grandP);
 
   if (workersToShow.length === 0) {
     content.innerHTML = `<p class="hint">Chưa có thợ. Vào tab <b>Cài đặt</b> để thêm.</p>`;
